@@ -142,10 +142,6 @@
       <button class="btn secondary" id="newAIBtn">AI Starts</button>
     </div>
 
-    <div class="actions" style="margin-top: 8px;">
-      <button class="btn" id="modeAIBtn">Player vs AI</button>
-      <button class="btn secondary" id="modePVPBtn">Player vs Player</button>
-    </div>
   </main>
 
   <script>
@@ -154,15 +150,12 @@
 
     let board = Array(9).fill(" ");
     let gameOver = false;
-    let gameMode = "ai";
     let currentPlayer = HUMAN;
 
     const boardEl = document.getElementById("board");
     const statusEl = document.getElementById("status");
     const restartBtn = document.getElementById("restartBtn");
     const newAIBtn = document.getElementById("newAIBtn");
-    const modeAIBtn = document.getElementById("modeAIBtn");
-    const modePVPBtn = document.getElementById("modePVPBtn");
 
     function checkWinner(state, player) {
       const lines = [
@@ -247,14 +240,14 @@
     function finishIfEnded() {
       if (checkWinner(board, HUMAN)) {
         gameOver = true;
-        updateStatus(gameMode === "pvp" ? "Player X wins!" : "You win!", "#b45309");
+        updateStatus("You win!", "#b45309");
         renderBoard();
         return true;
       }
 
       if (checkWinner(board, AI)) {
         gameOver = true;
-        updateStatus(gameMode === "pvp" ? "Player O wins!" : "AI wins!", "#0f766e");
+        updateStatus("AI wins!", "#0f766e");
         renderBoard();
         return true;
       }
@@ -276,12 +269,6 @@
       renderBoard();
 
       if (finishIfEnded()) return;
-
-      if (gameMode === "pvp") {
-        currentPlayer = currentPlayer === HUMAN ? AI : HUMAN;
-        updateStatus(`Player ${currentPlayer}'s turn`);
-        return;
-      }
 
       updateStatus("AI is thinking...");
       disableBoard();
@@ -314,11 +301,6 @@
       currentPlayer = HUMAN;
       renderBoard();
 
-      if (gameMode === "pvp") {
-        updateStatus("Player X's turn");
-        return;
-      }
-
       if (humanStarts) {
         updateStatus("Your turn (X)");
       } else {
@@ -329,32 +311,10 @@
       }
     }
 
-    function setMode(mode) {
-      gameMode = mode;
-      if (mode === "ai") {
-        modeAIBtn.classList.remove("secondary");
-        modePVPBtn.classList.add("secondary");
-        updateStatus("Your turn (X)");
-        restart(true);
-      } else {
-        modeAIBtn.classList.add("secondary");
-        modePVPBtn.classList.remove("secondary");
-        restart(true);
-      }
-    }
-
     restartBtn.addEventListener("click", () => restart(true));
-    newAIBtn.addEventListener("click", () => {
-      if (gameMode === "pvp") {
-        updateStatus("AI Starts works only in Player vs AI mode", "#374151");
-        return;
-      }
-      restart(false);
-    });
-    modeAIBtn.addEventListener("click", () => setMode("ai"));
-    modePVPBtn.addEventListener("click", () => setMode("pvp"));
+    newAIBtn.addEventListener("click", () => restart(false));
 
-    setMode("ai");
+    restart(true);
   </script>
 </body>
 </html>
