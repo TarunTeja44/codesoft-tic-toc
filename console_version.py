@@ -1,112 +1,115 @@
 """
-Tic-Tac-Toe: Human vs AI (Unbeatable Minimax) — Console Version
-
-Features:
-- Unbeatable AI using Minimax algorithm
-- Clear board display with numbered positions
-- "AI is thinking..." message
-- "AI chose position X" transparency
-- Input validation with error messages
-- Beautiful winner announcement
-- Play multiple games without restart
-
-How to run:
-    python console_version.py
+Console Tic-Tac-Toe: Human (X) vs AI (O)
+AI uses Minimax with alpha-beta pruning and plays optimally.
 """
+
+HUMAN = "X"
+AI = "O"
+EMPTY = " "
+WIN_LINES = (
+    (0, 1, 2), (3, 4, 5), (6, 7, 8),
+    (0, 3, 6), (1, 4, 7), (2, 5, 8),
+    (0, 4, 8), (2, 4, 6),
+)
 
 
 def create_board():
-    """Create and return an empty 3x3 board."""
-    return [" " for _ in range(9)]
+    """Return a fresh empty board."""
+    return [EMPTY] * 9
 
 
-def display_board(board):
-    """Display the board in a professional 3x3 format."""
+def available_moves(board):
+    """Return indexes for all empty cells."""
+    return [index for index, value in enumerate(board) if value == EMPTY]
+
+
+def get_winner(board):
+    """Return 'X' or 'O' if there is a winner, otherwise None."""
+    for a, b, c in WIN_LINES:
+        if board[a] != EMPTY and board[a] == board[b] == board[c]:
+            return board[a]
+    return None
+
+
+def is_draw(board):
+    """Return True when board is full and no one has won."""
+    return get_winner(board) is None and EMPTY not in board
+
+
+def evaluate_game_state(board):
+    """Return one of: 'X', 'O', 'draw', or None (game not finished)."""
+    winner = get_winner(board)
+    if winner is not None:
+        return winner
+    if is_draw(board):
+        return "draw"
+    return None
+
+
+def print_board(board):
+    """Print the board using a clean grid with position hints for empty cells."""
     print("\nCurrent Board:")
     for row in range(3):
         start = row * 3
-        cells = board[start:start + 3]
-        display_cells = []
-        
-        for idx, cell in enumerate(cells):
-            pos = start + idx + 1
-            # Show position number if cell is empty, else show X or O
-            display_cells.append(cell if cell != " " else str(pos))
-        
-        print(f" {display_cells[0]} | {display_cells[1]} | {display_cells[2]} ")
+        row_cells = []
+        for col in range(3):
+            index = start + col
+            cell_value = board[index]
+            row_cells.append(str(index + 1) if cell_value == EMPTY else cell_value)
+        print(f" {row_cells[0]} | {row_cells[1]} | {row_cells[2]}")
         if row < 2:
             print("-----------")
     print()
 
 
-def check_winner(board, player):
-    """Return True if the given player has won."""
-    winning_lines = [
-        (0, 1, 2), (3, 4, 5), (6, 7, 8),  # rows
-        (0, 3, 6), (1, 4, 7), (2, 5, 8),  # columns
-        (0, 4, 8), (2, 4, 6)              # diagonals
-    ]
-    for a, b, c in winning_lines:
-        if board[a] == board[b] == board[c] == player:
-            return True, (a, b, c)
-    return False, None
-
-
-def is_draw(board):
-    """Return True if it's a draw."""
-    return " " not in board and not check_winner(board, "X")[0] and not check_winner(board, "O")[0]
-
-
-def get_available_moves(board):
-    """Return list of empty cell indices."""
-    return [i for i, cell in enumerate(board) if cell == " "]
-
-
-def minimax(board, depth, is_maximizing):
+def minimax(board, depth, is_ai_turn, alpha, beta):
     """
-    Minimax algorithm: evaluates all possible future states.
-    AI maximizes score; human minimizes it.
-    Scores: AI win=+1, Human win=-1, Draw=0
+    Return score for the current board using Minimax.
+
+    AI tries to maximize score, human tries to minimize score.
+    Depth is used so the AI prefers quick wins and slower losses.
     """
-    winner, _ = check_winner(board, "O")
-    if winner:
-        return 1
-    
-    winner, _ = check_winner(board, "X")
-    if winner:
-        return -1
-    
+    winner = get_winner(board)
+    if winner == AI:
+        return 10 - depth
+    if winner == HUMAN:
+        return depth - 10
     if is_draw(board):
         return 0
 
-    if is_maximizing:
+    if is_ai_turn:
         best_score = -float("inf")
-        for move in get_available_moves(board):
-            board[move] = "O"
-            score = minimax(board, depth + 1, False)
-            board[move] = " "
+        for move in available_moves(board):
+            board[move] = AI
+            score = minimax(board, depth + 1, False, alpha, beta)
+            board[move] = EMPTY
             best_score = max(best_score, score)
+            alpha = max(alpha, best_score)
+            if beta <= alpha:
+                break
         return best_score
 
     best_score = float("inf")
-    for move in get_available_moves(board):
-        board[move] = "X"
-        score = minimax(board, depth + 1, True)
-        board[move] = " "
+    for move in available_moves(board):
+        board[move] = HUMAN
+        score = minimax(board, depth + 1, True, alpha, beta)
+        board[move] = EMPTY
         best_score = min(best_score, score)
+        beta = min(beta, best_score)
+        if beta <= alpha:
+            break
     return best_score
 
 
 def get_best_ai_move(board):
-    """Find the optimal move for AI using Minimax."""
+    """Return the best move index for AI."""
     best_score = -float("inf")
     best_move = None
 
-    for move in get_available_moves(board):
-        board[move] = "O"
-        score = minimax(board, depth=0, is_maximizing=False)
-        board[move] = " "
-        
+    for move in available_moves(board):
+        board[move] = AI
+        score = minimax(board, depth=0, is_ai_turn=False, alpha=-float("inf"), beta=float("inf"))
+        board[move] = EMPTY
         if score > best_score:
             best_score = score
             best_move = move
@@ -114,113 +117,85 @@ def get_best_ai_move(board):
     return best_move
 
 
-def get_human_move(board):
-    """Get and validate human input."""
+def get_valid_human_move(board):
+    """Prompt until user enters a legal move."""
     while True:
-        try:
-            move_text = input("Your turn (X). Enter position (1-9): ").strip()
-            
-            if not move_text.isdigit():
-                print("❌ Invalid input! Please enter a NUMBER from 1 to 9.")
-                continue
-            
-            position = int(move_text)
-            
-            if position < 1 or position > 9:
-                print(f"❌ Invalid position! Choose a number from 1 to 9, not {position}.")
-                continue
-            
-            index = position - 1
-            
-            if board[index] != " ":
-                print(f"❌ Cell {position} is already occupied! Try another position.")
-                continue
-            
-            return index
-        
-        except ValueError:
-            print("❌ Invalid input! Please enter a number from 1 to 9.")
+        raw_value = input("Your turn (X). Enter position (1-9): ").strip()
+
+        if not raw_value.isdigit():
+            print("Invalid input. Enter a number from 1 to 9.")
+            continue
+
+        position = int(raw_value)
+        if position < 1 or position > 9:
+            print("Invalid move. Position must be between 1 and 9.")
+            continue
+
+        move = position - 1
+        if board[move] != EMPTY:
+            print("Invalid move. That cell is already occupied.")
+            continue
+
+        return move
+
+
+def announce_result(state):
+    """Print final result message."""
+    if state == HUMAN:
+        print("You win. Nice game!")
+    elif state == AI:
+        print("AI wins. Better luck next time.")
+    else:
+        print("It's a draw.")
 
 
 def play_one_game():
-    """Play one complete game."""
+    """Play one full game session."""
     board = create_board()
-    
-    print("\n" + "="*50)
-    print("  TIC-TAC-TOE: YOU (X) vs AI (O)")
-    print("="*50)
-    print("\n🤖 AI Power: Unbeatable Minimax Algorithm")
-    print("📍 Positions: 1-9 (numbered on board)")
-    
-    current_player = "X"  # Human starts
+    current_player = HUMAN
+
+    print("\nTic-Tac-Toe: You are X, AI is O")
 
     while True:
-        display_board(board)
-        
-        if current_player == "X":
-            # Human's turn
-            move = get_human_move(board)
-            board[move] = "X"
-            
-            winner, winning_line = check_winner(board, "X")
-            if winner:
-                display_board(board)
-                print("🎉 YOU WIN! Great job!")
-                return
-            
-            if is_draw(board):
-                display_board(board)
-                print("🤝 DRAW! Nobody wins this round.")
-                return
-            
-            current_player = "O"
-        
+        print_board(board)
+
+        if current_player == HUMAN:
+            move = get_valid_human_move(board)
+            board[move] = HUMAN
         else:
-            # AI's turn
-            print("🤖 AI is thinking...")
+            print("AI is thinking...")
             move = get_best_ai_move(board)
-            board[move] = "O"
-            
-            print(f"✅ AI chose position {move + 1}")
-            
-            winner, winning_line = check_winner(board, "O")
-            if winner:
-                display_board(board)
-                print("🎯 AI WINS! Three in a row!")
-                print("💡 Better luck next time. The Minimax algorithm is unbeatable!")
-                return
-            
-            if is_draw(board):
-                display_board(board)
-                print("🤝 DRAW! Nobody wins this round.")
-                return
-            
-            current_player = "X"
+            board[move] = AI
+            print(f"AI chose position {move + 1}")
+
+        state = evaluate_game_state(board)
+        if state is not None:
+            print_board(board)
+            announce_result(state)
+            return
+
+        current_player = AI if current_player == HUMAN else HUMAN
 
 
-def ask_restart():
-    """Ask if user wants to play again."""
+def ask_play_again():
+    """Return True if user wants another game."""
     while True:
-        answer = input("\n▶ Play again? (y/n): ").strip().lower()
+        answer = input("Play again? (y/n): ").strip().lower()
         if answer in ("y", "yes"):
             return True
-        elif answer in ("n", "no"):
+        if answer in ("n", "no"):
             return False
-        else:
-            print("❌ Please enter 'y' or 'n'.")
+        print("Please enter 'y' or 'n'.")
 
 
 def main():
-    """Main game loop."""
-    print("\n" + "╔" + "="*48 + "╗")
-    print("║  Welcome to Tic-Tac-Toe with Unbeatable AI  ║")
-    print("║  Powered by Minimax Algorithm              ║")
-    print("╚" + "="*48 + "╝\n")
-    
+    """Entry point for console game."""
+    print("Welcome to Tic-Tac-Toe with Minimax AI")
+
     while True:
         play_one_game()
-        if not ask_restart():
-            print("\n✨ Thanks for playing! Better luck next time. ✨\n")
+        if not ask_play_again():
+            print("Thanks for playing.")
             break
 
 
